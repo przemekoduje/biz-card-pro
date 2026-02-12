@@ -34,7 +34,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "googlegmail",
+          "mailto"
+        ],
+        "NSCalendarsUsageDescription": "Allow Business Card Pro to access your calendar to create follow-up reminders.",
+        "NSRemindersUsageDescription": "Allow Business Card Pro to access your reminders to create follow-up tasks."
+      }
     },
     "android": {
       "adaptiveIcon": {

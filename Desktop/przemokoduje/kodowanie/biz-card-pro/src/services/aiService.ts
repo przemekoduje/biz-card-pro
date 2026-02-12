@@ -8,13 +8,12 @@ const openai = new OpenAI({
 });
 
 import { incrementActionCount } from './usageService';
-
-// ... imports
+import { BusinessCard } from '../types';
 
 export const analyzeBusinessCard = async (frontBase64: string, backBase64?: string): Promise<any> => {
     try {
         const content: any[] = [
-            { type: "text", text: "Analyze this business card image. Extract details in PURE JSON format (no markdown, no backticks). Fields: first_name, last_name, company, email, phone, job_title, address, scope_of_work, industry (comma-separated keywords), event_note. Return ONLY the JSON object." },
+            { type: "text", text: "Analyze this business card image. Extract details in PURE JSON format (no markdown, no backticks).\n\nMANDATORY: You must generate a list of 3-5 relevant 'industry' tags based on the card's context in POLISH (e.g., if it says 'Plumbing', add ['Hydraulika', 'Budownictwo', 'Konserwacja']).\n\nALSO MANDATORY: Generate 'ice_breakers' object with 3 fields: 'email', 'linkedin', 'sms'.\n- 'email': Professional follow-up email in Polish.\n- 'linkedin': Professional connection request in Polish.\n- 'sms': MUST be exactly this format: 'Hej tu [Twoje Imię]. Dziękuję za spotkanie i miłą rozmowę. Pozostanę w kontakcie.' (Do NOT use the name from the card as the sender).\n\nSOCIAL LINKS: Start searching for or inferring likely social media links based on the company name, person's name, or handles visible on the card. Return a 'social_links' object with fields: 'linkedin' (personal profile), 'linkedin_company' (company page), 'instagram', 'facebook', 'youtube'. Only include a link if you are highly confident it exists or if it is explicitly on the card. If not found/unsure, omit the field.\n\nFOLLOW UP: Analyze the text to identify if a follow-up is relevant (e.g., specific date mentioned, or general business context). If relevant, set 'follow_up_needed' to true. Also generate a 'follow_up_suggestion' string (e.g., '2 days', '1 week', 'Next Monday') based on urgency or standard business ettiquette. If no specific context, suggest '3 days'.\n\nFields: first_name, last_name, company, email, phone, job_title, address, scope_of_work (Describe in POLISH), industry (comma-separated string of tags in POLISH), ice_breakers (object), social_links (object), follow_up_needed (boolean), follow_up_suggestion (string), event_note. Return ONLY the JSON object." },
             {
                 type: "image_url",
                 image_url: {
@@ -30,7 +29,7 @@ export const analyzeBusinessCard = async (frontBase64: string, backBase64?: stri
                     "url": `data:image/jpeg;base64,${backBase64}`,
                 },
             });
-            content.push({ type: "text", text: "The second image is the back of the card. Use it to extract scope_of_work or additional details." });
+            content.push({ type: "text", text: "The second image is the back of the card. Use it to extract scope_of_work or additional details. Refine the industry tags based on this side too." });
         }
 
         const response = await openai.chat.completions.create({
@@ -75,8 +74,8 @@ export const expandSearchQuery = async (query: string): Promise<string[]> => {
             messages: [
                 {
                     role: "user",
-                    content: `Generate a list of 5-10 related keywords, synonyms, and industry terms for the search query: "${query}". 
-                    For example, if query is "Windows", return ["Windows", "Doors", "Glazing", "Joinery", "PVC", "Glass", "Installation"].
+                    content: `Generate a list of 5-10 related keywords, synonyms, and industry terms for the search query: "${query}" in POLISH. 
+                    For example, if query is "Okna", return ["Okna", "Drzwi", "Szklenie", "Stolarka", "PCV", "Szyby", "Montaż"].
                     Return ONLY a JSON array of strings.`
                 }
             ],
@@ -87,15 +86,36 @@ export const expandSearchQuery = async (query: string): Promise<string[]> => {
         if (!content) return [query];
 
         const parsed = JSON.parse(content);
-        // Handle different possible JSON structures that GPT might return, though we asked for array
-        // Ideally it returns { "keywords": [...] } or just the array if valid JSON
-        // Since we enforced json_object, it likely returns an object. Let's adjust prompt or parsing.
-
-        // Let's assume it returns { "keywords": [...] } based on common behavior with json_object
-        // But safer to ask for specific key.
         return parsed.keywords || [query];
     } catch (error) {
         console.error("Error expanding query:", error);
-        return [query]; // Fallback to original query
+        return [query];
     }
+};
+
+export const generateEmbedding = async (text: string): Promise<number[]> => {
+    try {
+        const response = await openai.embeddings.create({
+            model: "text-embedding-3-small",
+            input: text,
+        });
+        return response.data[0].embedding;
+    } catch (error) {
+        console.error("Error generating embedding:", error);
+        throw error;
+    }
+};
+
+export const generateSearchContext = (card: Partial<BusinessCard>): string => {
+    const parts = [
+        card.first_name,
+        card.last_name,
+        card.company,
+        card.job_title,
+        card.address,
+        card.scope_of_work,
+        card.event_note,
+        card.industry // AI generated and User tags combined here
+    ];
+    return parts.filter(Boolean).join(' ');
 };

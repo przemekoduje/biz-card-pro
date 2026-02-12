@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Image, RefreshControl, Button } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Image, RefreshControl, Button, StatusBar } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../lib/supabase';
 import { BusinessCard } from '../types';
 import { expandSearchQuery } from '../services/aiService';
+import { colors } from '../theme/colors';
+import { commonStyles } from '../theme/styles';
+import { Ionicons } from '@expo/vector-icons';
 
 type RootStackParamList = {
     Home: undefined;
@@ -39,11 +42,7 @@ export default function HomeScreen() {
 
     React.useLayoutEffect(() => {
         navigation.setOptions({
-            headerRight: () => (
-                <View style={{ marginRight: 15 }}>
-                    <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
-                </View>
-            ),
+            headerShown: false, // Custom header for Google style
         });
     }, [navigation]);
 
@@ -136,7 +135,7 @@ export default function HomeScreen() {
 
     const renderItem = ({ item }: { item: BusinessCard }) => (
         <TouchableOpacity
-            style={styles.card}
+            style={commonStyles.card}
             onPress={() => navigation.navigate('Details', { card_id: item.id })}
         >
             <View style={styles.cardContent}>
@@ -151,14 +150,21 @@ export default function HomeScreen() {
                         )}
                     </View>
                     <View style={styles.cardInfo}>
-                        <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
-                        {item.job_title ? <Text style={styles.jobTitle}>{item.job_title}</Text> : null}
-                        <Text style={styles.company}>{item.company}</Text>
-                        {item.industry ? <Text style={styles.industryBadge}>{item.industry}</Text> : null}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={styles.name}>{item.first_name} {item.last_name}</Text>
+                            {item.follow_up_needed && !item.last_contact_date && (
+                                <View style={styles.notificationDot} />
+                            )}
+                        </View>
+                        {(item.job_title || item.company) && (
+                            <Text style={styles.jobTitle}>
+                                {item.job_title}
+                                {item.job_title && item.company ? ' • ' : ''}
+                                {item.company}
+                            </Text>
+                        )}
+                        {item.industry && <Text style={styles.industryBadge}>{item.industry}</Text>}
                     </View>
-                </View>
-                <View style={styles.cardFooter}>
-                    <Text style={styles.dateText}>Added: {new Date(item.created_at || Date.now()).toLocaleDateString()}</Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -166,43 +172,49 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>My Cards</Text>
-            </View>
+            <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
-            <View style={styles.searchContainer}>
-                <View style={styles.inputWrapper}>
+            {/* Google-style Top Bar */}
+            <View style={styles.searchSection}>
+                <View style={styles.searchBar}>
+                    <Ionicons name="search" size={20} color={colors.textSecondary} style={{ marginLeft: 8 }} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search name, company, title, industry..."
+                        placeholder="Search your cards"
+                        placeholderTextColor={colors.textSecondary}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                     />
-                    {isExpanding && <ActivityIndicator size="small" color="#007AFF" style={styles.loadingIndicator} />}
+                    {isExpanding && <ActivityIndicator size="small" color={colors.primary} style={styles.loadingIndicator} />}
+                    <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+                        <View style={styles.profileIcon}><Text style={{ color: 'white', fontWeight: 'bold' }}>P</Text></View>
+                    </TouchableOpacity>
                 </View>
 
+                {/* Smart Search Toggle */}
                 <TouchableOpacity
                     style={[styles.smartToggle, smartSearchEnabled && styles.smartToggleActive]}
                     onPress={() => setSmartSearchEnabled(!smartSearchEnabled)}
                 >
+                    <Ionicons name={smartSearchEnabled ? "sparkles" : "sparkles-outline"} size={14} color={smartSearchEnabled ? colors.primary : colors.textSecondary} />
                     <Text style={[styles.smartToggleText, smartSearchEnabled && styles.smartToggleTextActive]}>
-                        {smartSearchEnabled ? "✨ Smart Search ON" : "Lasting Smart Search OFF"}
+                        {smartSearchEnabled ? " AI Search On" : " AI Search Off"}
                     </Text>
                 </TouchableOpacity>
 
                 {smartSearchEnabled && expandedKeywords.length > 0 && searchQuery.length > 2 && (
                     <Text style={styles.smartSearchText}>
-                        Smart Search: {expandedKeywords.slice(0, 3).join(', ')}...
+                        Scanning for: {expandedKeywords.slice(0, 3).join(', ')}...
                     </Text>
                 )}
             </View>
 
             <View style={styles.filterContainer}>
                 <TouchableOpacity onPress={() => setSortBy('date_desc')} style={[styles.filterChip, sortBy === 'date_desc' && styles.filterChipActive]}>
-                    <Text style={[styles.filterText, sortBy === 'date_desc' && styles.filterTextActive]}>Newest</Text>
+                    <Text style={[styles.filterText, sortBy === 'date_desc' && styles.filterTextActive]}>Recent</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setSortBy('name_asc')} style={[styles.filterChip, sortBy === 'name_asc' && styles.filterChipActive]}>
-                    <Text style={[styles.filterText, sortBy === 'name_asc' && styles.filterTextActive]}>A-Z</Text>
+                    <Text style={[styles.filterText, sortBy === 'name_asc' && styles.filterTextActive]}>Name</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setSortBy('company_asc')} style={[styles.filterChip, sortBy === 'company_asc' && styles.filterChipActive]}>
                     <Text style={[styles.filterText, sortBy === 'company_asc' && styles.filterTextActive]}>Company</Text>
@@ -210,7 +222,7 @@ export default function HomeScreen() {
             </View>
 
             {loading ? (
-                <ActivityIndicator size="large" style={{ marginTop: 20 }} />
+                <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
             ) : (
                 <FlatList
                     data={filteredAndSortedCards}
@@ -218,12 +230,13 @@ export default function HomeScreen() {
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContent}
                     refreshControl={
-                        <RefreshControl refreshing={loading} onRefresh={fetchCards} />
+                        <RefreshControl refreshing={loading} onRefresh={fetchCards} colors={[colors.primary]} />
                     }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <Text style={styles.emptyText}>No cards found.</Text>
-                            <Text style={styles.emptySubtext}>Tap + to scan a new business card.</Text>
+                            <Image source={{ uri: 'https://cdn-icons-png.flaticon.com/512/7486/7486776.png' }} style={{ width: 100, height: 100, opacity: 0.5, marginBottom: 20 }} />
+                            <Text style={styles.emptyText}>No business cards yet</Text>
+                            <Text style={styles.emptySubtext}>Tap the + button to add one</Text>
                         </View>
                     }
                 />
@@ -233,7 +246,8 @@ export default function HomeScreen() {
                 style={styles.fab}
                 onPress={() => navigation.navigate('Camera')}
             >
-                <Text style={styles.fabText}>+</Text>
+                <Ionicons name="camera" size={28} color="white" />
+                <Text style={styles.fabText}>Scan</Text>
             </TouchableOpacity>
         </View>
     );
@@ -242,110 +256,132 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F2F2F7',
+        backgroundColor: colors.background,
     },
-    header: {
-        paddingTop: 60,
-        paddingHorizontal: 20,
-        paddingBottom: 10,
-        backgroundColor: 'white',
+    searchSection: {
+        paddingTop: 50,
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+        backgroundColor: colors.surface,
+        borderBottomWidth: 1,
+        borderBottomColor: 'transparent', // Seamless transition usually
     },
-    headerTitle: {
-        fontSize: 34,
-        fontWeight: 'bold',
-        color: 'black',
-    },
-    searchContainer: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: 'white',
-        paddingBottom: 15,
-    },
-    inputWrapper: {
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#E5E5EA',
-        borderRadius: 10,
-        paddingRight: 10,
+        backgroundColor: colors.surfaceVariant,
+        borderRadius: 24, // Pill shape
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        height: 50,
     },
     searchInput: {
         flex: 1,
-        padding: 10,
+        marginLeft: 12,
         fontSize: 16,
+        color: colors.text,
+    },
+    profileIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: colors.primary, // Placeholder color
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginLeft: 10,
     },
     loadingIndicator: {
-        marginLeft: 5,
+        marginLeft: 8,
+    },
+    smartToggle: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginTop: 12,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 16,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    smartToggleActive: {
+        backgroundColor: colors.secondary,
+        borderColor: colors.secondary,
+    },
+    smartToggleText: {
+        fontSize: 13,
+        color: colors.textSecondary,
+        fontWeight: '500',
+        marginLeft: 4,
+    },
+    smartToggleTextActive: {
+        color: colors.primary,
+        fontWeight: '600',
     },
     smartSearchText: {
         fontSize: 12,
-        color: '#007AFF',
-        marginTop: 5,
-        marginLeft: 5,
-        fontStyle: 'italic',
+        color: colors.textSecondary,
+        textAlign: 'center',
+        marginTop: 8,
     },
     filterContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        backgroundColor: '#F2F2F7',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.background,
     },
     filterChip: {
         paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 20,
-        backgroundColor: '#E5E5EA',
-        marginRight: 10,
+        paddingHorizontal: 16,
+        borderRadius: 18,
+        borderWidth: 1,
+        borderColor: colors.border,
+        backgroundColor: colors.surface,
+        marginRight: 8,
     },
     filterChipActive: {
-        backgroundColor: 'black',
+        backgroundColor: colors.primary, // Or very light blue
+        borderColor: colors.primary,
     },
     filterText: {
         fontSize: 14,
-        color: 'black',
+        color: colors.textSecondary,
+        fontWeight: '500',
     },
     filterTextActive: {
-        color: 'white',
-        fontWeight: 'bold',
+        color: colors.white,
     },
     listContent: {
-        padding: 20,
-        paddingBottom: 100, // Space for FAB
+        paddingTop: 8,
+        paddingBottom: 100,
     },
-    card: {
-        backgroundColor: 'white',
-        borderRadius: 15,
-        marginBottom: 15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-        elevation: 2,
-        overflow: 'hidden',
-    },
+    // Card styles are imported from commonStyles, but we can override interior here
     cardContent: {
-        padding: 15,
+        flexDirection: 'row',
     },
     cardHeader: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        flex: 1,
     },
     avatarContainer: {
-        marginRight: 15,
+        marginRight: 16,
     },
     avatar: {
-        width: 60,
-        height: 60,
-        borderRadius: 30, // Circle
-        backgroundColor: '#f0f0f0',
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: colors.surfaceVariant,
     },
     avatarPlaceholder: {
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#007AFF',
+        backgroundColor: colors.primary,
     },
     avatarInitial: {
-        color: 'white',
-        fontSize: 24,
+        color: colors.white,
+        fontSize: 20,
         fontWeight: 'bold',
     },
     cardInfo: {
@@ -353,90 +389,68 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     name: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#000',
+        fontSize: 16,
+        fontWeight: '600', // Google Sans Medium
+        color: colors.text,
         marginBottom: 2,
     },
     jobTitle: {
         fontSize: 14,
-        color: '#666',
+        color: colors.textSecondary,
         marginBottom: 2,
-    },
-    company: {
-        fontSize: 14,
-        color: '#8E8E93',
-        fontWeight: '500',
-    },
-    cardFooter: {
-        marginTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#F2F2F7',
-        paddingTop: 10,
-        alignItems: 'flex-end',
-    },
-    dateText: {
-        fontSize: 12,
-        color: '#C7C7CC',
-    },
-    emptyContainer: {
-        alignItems: 'center',
-        marginTop: 50,
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: '#888',
-        marginTop: 5,
-    },
-    fab: {
-        position: 'absolute',
-        bottom: 30,
-        right: 30,
-        backgroundColor: '#007AFF',
-        width: 60,
-        height: 60,
-        borderRadius: 30, // Circle
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 8,
-    },
-    fabText: {
-        color: 'white',
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginTop: -3,
-    },
-    smartToggle: {
-        marginTop: 10,
-        padding: 8,
-        borderRadius: 8,
-        backgroundColor: '#E5E5EA',
-        alignSelf: 'flex-start',
-    },
-    smartToggleActive: {
-        backgroundColor: '#e0f2fe',
-    },
-    smartToggleText: {
-        fontSize: 12,
-        color: '#666',
-        fontWeight: '600',
-    },
-    smartToggleTextActive: {
-        color: '#007AFF',
     },
     industryBadge: {
         fontSize: 12,
-        color: '#007AFF',
-        marginTop: 2,
+        color: colors.primary,
         fontWeight: '500',
+        marginTop: 2,
+    },
+    emptyContainer: {
+        alignItems: 'center',
+        marginTop: 60,
+        paddingHorizontal: 40,
+    },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: colors.text,
+        marginBottom: 8,
+    },
+    emptySubtext: {
+        fontSize: 14,
+        color: colors.textSecondary,
+        textAlign: 'center',
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 24,
+        right: 24,
+        // Changed to Material 3 FAB style (often secondary container)
+        // actually let's use primary for better contrast
+        backgroundColor: colors.primary,
+        borderRadius: 16, // Material 3 rounded square/pill
+        paddingVertical: 16,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    fabText: {
+        color: colors.white,
+        fontSize: 16,
+        fontWeight: '600',
+        marginLeft: 8,
+    },
+    notificationDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: colors.error,
+        marginLeft: 8,
+        marginTop: 6,
     },
 });

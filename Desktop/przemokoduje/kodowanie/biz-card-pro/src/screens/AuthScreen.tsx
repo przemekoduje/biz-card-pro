@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { colors } from '../theme/colors';
+import { commonStyles } from '../theme/styles';
 
 export default function AuthScreen() {
     const [email, setEmail] = useState('');
@@ -33,37 +35,52 @@ export default function AuthScreen() {
     };
 
     return (
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={styles.container}
         >
             <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-                <Text style={styles.title}>Biz Card Pro</Text>
-                
+                <View style={styles.header}>
+                    <Text style={styles.title}>Biz Card Pro</Text>
+                    <Text style={styles.subtitle}>{isLogin ? "Welcome back" : "Create your account"}</Text>
+                </View>
+
                 <View style={styles.form}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Email"
-                        value={email}
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                        keyboardType="email-address"
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Password"
-                        value={password}
-                        onChangeText={setPassword}
-                        secureTextEntry
-                    />
-                    
-                    <TouchableOpacity style={styles.button} onPress={handleAuth} disabled={loading}>
-                        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>{isLogin ? "Sign In" : "Sign Up"}</Text>}
-                    </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Email</Text>
+                        <TextInput
+                            style={commonStyles.input}
+                            placeholder="name@example.com"
+                            placeholderTextColor={colors.textSecondary}
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Password</Text>
+                        <TextInput
+                            style={commonStyles.input}
+                            placeholder="Enter your password"
+                            placeholderTextColor={colors.textSecondary}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                    </View>
+
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity style={commonStyles.primaryButton} onPress={handleAuth} disabled={loading}>
+                            {loading ? <ActivityIndicator color={colors.white} /> : <Text style={commonStyles.primaryButtonText}>{isLogin ? "Sign In" : "Sign Up"}</Text>}
+                        </TouchableOpacity>
+                    </View>
 
                     <TouchableOpacity onPress={() => setIsLogin(!isLogin)} style={styles.switchButton}>
                         <Text style={styles.switchText}>
-                            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
+                            {isLogin ? "Don't have an account? " : "Already have an account? "}
+                            <Text style={styles.linkText}>{isLogin ? "Sign Up" : "Sign In"}</Text>
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -75,49 +92,53 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.background,
     },
     scrollContainer: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 48,
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 40,
-        color: '#007AFF',
+        color: colors.text,
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: colors.textSecondary,
     },
     form: {
-        gap: 15,
+        width: '100%',
     },
-    input: {
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 8,
-        padding: 15,
-        fontSize: 16,
-        backgroundColor: '#f9f9f9',
+    inputContainer: {
+        marginBottom: 20,
     },
-    button: {
-        backgroundColor: '#007AFF',
-        padding: 15,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 10,
+    label: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.text,
+        marginBottom: 8,
+        marginLeft: 4,
     },
-    buttonText: {
-        color: 'white',
-        fontWeight: 'bold',
-        fontSize: 16,
+    buttonContainer: {
+        marginTop: 16,
     },
     switchButton: {
         alignItems: 'center',
-        marginTop: 20,
+        marginTop: 32,
     },
     switchText: {
-        color: '#007AFF',
+        color: colors.textSecondary,
         fontSize: 14,
+    },
+    linkText: {
+        color: colors.primary,
+        fontWeight: '600',
     },
 });
