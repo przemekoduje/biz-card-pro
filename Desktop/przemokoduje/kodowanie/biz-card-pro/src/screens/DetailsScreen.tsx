@@ -112,7 +112,12 @@ export default function DetailsScreen() {
         if (status === 'granted') {
             try {
                 const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-                const writableCalendars = calendars.filter(c => c.allowsModifications);
+                const writableCalendars = calendars.filter(c => c.allowsModifications).sort((a, b) => {
+                    // Sort by primary status first, then by title
+                    if (a.isPrimary && !b.isPrimary) return -1;
+                    if (!a.isPrimary && b.isPrimary) return 1;
+                    return a.title.localeCompare(b.title);
+                });
 
                 if (writableCalendars.length === 0) {
                     Alert.alert("Brak kalendarzy", "Nie znaleziono kalendarzy z uprawnieniami do zapisu.");
@@ -149,15 +154,24 @@ export default function DetailsScreen() {
         setDatePickerVisible(true);
     };
 
-    const handleDateConfirm = async (event: any, date?: Date) => {
-        if (Platform.OS === 'android') {
-            setDatePickerVisible(false);
+    const handleDateChange = (event: any, date?: Date) => {
+        if (event.type === 'dismissed') {
+             if (Platform.OS === 'android') setDatePickerVisible(false);
+             return;
         }
 
-        if (!date) return;
+        if (date) {
+            setSelectedDate(date);
+            if (Platform.OS === 'android') {
+                 setDatePickerVisible(false);
+                 createCalendarEvent(date);
+            }
+        }
+    };
 
-        setSelectedDate(date);
-        createCalendarEvent(date);
+    const handleConfirmDate = () => {
+        setDatePickerVisible(false);
+        createCalendarEvent(selectedDate);
     };
 
     const createCalendarEvent = async (date: Date) => {
@@ -181,6 +195,7 @@ export default function DetailsScreen() {
             Alert.alert("Błąd", "Nie udało się zapisać wydarzenia.");
         }
     }
+
 
     const handleSave = async () => {
         setSaving(true);
@@ -425,6 +440,45 @@ export default function DetailsScreen() {
                         <TextInput style={[commonStyles.input, styles.textArea]} value={eventNote} onChangeText={setEventNote} multiline numberOfLines={4} />
                     </View>
 
+                    {/* Social Media Section */}
+                    {card?.social_links && Object.values(card.social_links).some(link => link) && (
+                        <View style={styles.assistantContainer}>
+                            <Text style={styles.sectionTitle}>Social Media</Text>
+                            <View style={styles.socialButtons}>
+                                {card.social_links.linkedin && (
+                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.linkedin && Linking.openURL(card.social_links.linkedin)}>
+                                        <FontAwesome5 name="linkedin" size={24} color="#0077B5" />
+                                    </TouchableOpacity>
+                                )}
+                                {card.social_links.linkedin_company && (
+                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.linkedin_company && Linking.openURL(card.social_links.linkedin_company)}>
+                                        <View style={{ position: 'relative' }}>
+                                            <FontAwesome5 name="linkedin" size={24} color="#0077B5" />
+                                            <View style={styles.companyBadge}>
+                                                <Ionicons name="business" size={8} color="white" />
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                                {card.social_links.instagram && (
+                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.instagram && Linking.openURL(card.social_links.instagram)}>
+                                        <FontAwesome5 name="instagram" size={24} color="#E1306C" />
+                                    </TouchableOpacity>
+                                )}
+                                {card.social_links.facebook && (
+                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.facebook && Linking.openURL(card.social_links.facebook)}>
+                                        <FontAwesome5 name="facebook" size={24} color="#1877F2" />
+                                    </TouchableOpacity>
+                                )}
+                                {card.social_links.youtube && (
+                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.youtube && Linking.openURL(card.social_links.youtube)}>
+                                        <FontAwesome5 name="youtube" size={24} color="#FF0000" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                    )}
+
                     {/* Relationship/Follow-up Section */}
                     {true && (
                         <View style={styles.assistantContainer}>
@@ -476,54 +530,42 @@ export default function DetailsScreen() {
                         </View>
                     </Modal>
 
-                    {/* DateTimePicker */}
+                    {/* DateTimePicker - Platform Specific */}
                     {isDatePickerVisible && (
-                        <DateTimePicker
-                            value={selectedDate}
-                            mode="date"
-                            display="default"
-                            onChange={handleDateConfirm}
-                        />
+                        Platform.OS === 'ios' ? (
+                            <Modal transparent={true} animationType="fade" visible={isDatePickerVisible} onRequestClose={() => setDatePickerVisible(false)}>
+                                <View style={styles.modalOverlay}>
+                                    <View style={[styles.modalContent, { padding: 20 }]}>
+                                        <Text style={styles.modalTitle}>Wybierz Datę i Czas</Text>
+                                        <DateTimePicker
+                                            value={selectedDate}
+                                            mode="datetime"
+                                            display="spinner"
+                                            onChange={handleDateChange}
+                                            style={{ height: 120, width: '100%' }}
+                                        />
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 }}>
+                                            <TouchableOpacity style={{ padding: 10 }} onPress={() => setDatePickerVisible(false)}>
+                                                <Text style={{ color: colors.error, fontSize: 16 }}>Anuluj</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity style={{ padding: 10 }} onPress={handleConfirmDate}>
+                                                <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Zatwierdź</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Modal>
+                        ) : (
+                            <DateTimePicker
+                                value={selectedDate}
+                                mode="date"
+                                display="default"
+                                onChange={handleDateChange}
+                            />
+                        )
                     )}
 
-                    {/* Social Media Section */}
-                    {card?.social_links && Object.values(card.social_links).some(link => link) && (
-                        <View style={styles.assistantContainer}>
-                            <Text style={styles.sectionTitle}>Social Media</Text>
-                            <View style={styles.socialButtons}>
-                                {card.social_links.linkedin && (
-                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.linkedin && Linking.openURL(card.social_links.linkedin)}>
-                                        <FontAwesome5 name="linkedin" size={24} color="#0077B5" />
-                                    </TouchableOpacity>
-                                )}
-                                {card.social_links.linkedin_company && (
-                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.linkedin_company && Linking.openURL(card.social_links.linkedin_company)}>
-                                        <View style={{ position: 'relative' }}>
-                                            <FontAwesome5 name="linkedin" size={24} color="#0077B5" />
-                                            <View style={styles.companyBadge}>
-                                                <Ionicons name="business" size={8} color="white" />
-                                            </View>
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                                {card.social_links.instagram && (
-                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.instagram && Linking.openURL(card.social_links.instagram)}>
-                                        <FontAwesome5 name="instagram" size={24} color="#E1306C" />
-                                    </TouchableOpacity>
-                                )}
-                                {card.social_links.facebook && (
-                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.facebook && Linking.openURL(card.social_links.facebook)}>
-                                        <FontAwesome5 name="facebook" size={24} color="#1877F2" />
-                                    </TouchableOpacity>
-                                )}
-                                {card.social_links.youtube && (
-                                    <TouchableOpacity style={styles.socialButton} onPress={() => card.social_links?.youtube && Linking.openURL(card.social_links.youtube)}>
-                                        <FontAwesome5 name="youtube" size={24} color="#FF0000" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        </View>
-                    )}
+
 
                     {/* Contact Assistant Section */}
                     {card?.ice_breakers && (
