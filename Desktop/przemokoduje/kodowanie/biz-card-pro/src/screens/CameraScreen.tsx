@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { analyzeBusinessCard } from '../services/aiService';
 import { supabase } from '../lib/supabase';
 import { uploadImage } from '../services/storageService';
+import { checkActionLimit } from '../services/usageService';
 
 type RootStackParamList = {
     Home: undefined;
@@ -34,10 +35,12 @@ export default function CameraScreen() {
     if (!permission.granted) {
         return (
             <View style={styles.container}>
-                <Text style={{ textAlign: 'center' }}>We need your permission to show the camera</Text>
-                <TouchableOpacity onPress={requestPermission} style={styles.button}>
-                    <Text style={styles.text}>Grant Permission</Text>
-                </TouchableOpacity>
+                <View style={styles.permissionContainer}>
+                    <Text style={styles.permissionText}>We need your permission to show the camera</Text>
+                    <TouchableOpacity onPress={requestPermission} style={styles.button}>
+                        <Text style={styles.text}>Grant Permission</Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     }
@@ -88,10 +91,22 @@ export default function CameraScreen() {
         }
     };
 
+
     const processCard = async () => {
         if (!frontPhoto) return;
 
         try {
+            // Check usage limit first
+            try {
+                const limitCheck = await checkActionLimit();
+                if (!limitCheck.allowed) {
+                    Alert.alert("Limit Reached", limitCheck.message || "Daily limit reached.");
+                    return;
+                }
+            } catch (limitError) {
+                console.error("Limit check failed, proceeding anyway:", limitError);
+            }
+
             setProcessing(true);
 
             // 1. Analyze with AI
@@ -107,8 +122,12 @@ export default function CameraScreen() {
             }
 
             // 3. Save to Database
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not found");
+
             const { data, error } = await supabase.from('business_cards').insert([
                 {
+                    user_id: user.id,
                     first_name: analysis.first_name || '',
                     last_name: analysis.last_name || '',
                     company: analysis.company || '',
@@ -161,7 +180,7 @@ export default function CameraScreen() {
                             <Image source={{ uri: backPhoto.uri }} style={styles.previewImage} resizeMode="contain" />
                         </>
                     ) : (
-                        <Text style={styles.label}>Back Side: None (Optional)</Text>
+                        <Text style={styles.label}>Back Side: {step === 'review' ? 'None' : 'Optional'}</Text>
                     )}
                 </View>
 
@@ -181,15 +200,24 @@ export default function CameraScreen() {
 
                     {step === 'review' && (
                         <View style={styles.row}>
-                            <TouchableOpacity style={styles.secondaryButton} onPress={reset}>
+                            <TouchableOpacity style={styles.secondaryButton} onPress={reset} disabled={processing}>
                                 <Text style={styles.secondaryButtonText}>Retake</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.primaryButton} onPress={processCard} disabled={processing}>
-                                {processing ? <ActivityIndicator color="white" /> : <Text style={styles.primaryButtonText}>Analyze Card</Text>}
+                                <Text style={styles.primaryButtonText}>Analyze Card</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                 </View>
+
+                {processing && (
+                    <View style={[StyleSheet.absoluteFill, styles.loadingOverlay]}>
+                        <View style={styles.loadingBox}>
+                            <ActivityIndicator size="large" color="#007AFF" />
+                            <Text style={styles.loadingText}>Analyzing...</Text>
+                        </View>
+                    </View>
+                )}
             </View>
         )
     }
@@ -342,5 +370,43 @@ const styles = StyleSheet.create({
     secondaryButtonText: {
         color: '#007AFF',
         fontWeight: 'bold',
+    },
+    loadingOverlay: {
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    loadingBox: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    permissionContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    permissionText: {
+        textAlign: 'center',
+        marginBottom: 20,
+        fontSize: 18,
+        color: 'white',
     },
 });

@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Image, Button, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Image, Button, ScrollView, Alert, ActivityIndicator, TouchableOpacity, Linking } from 'react-native';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../lib/supabase';
 import { BusinessCard } from '../types';
+import * as Contacts from 'expo-contacts';
+import { Feather } from '@expo/vector-icons';
 
 type RootStackParamList = {
     Home: undefined;
@@ -117,6 +119,35 @@ export default function DetailsScreen() {
         );
     };
 
+    const addToContacts = async () => {
+        const { status } = await Contacts.requestPermissionsAsync();
+        if (status === 'granted') {
+            const contact: Contacts.Contact = {
+                contactType: Contacts.ContactTypes.Person,
+                name: `${firstName} ${lastName}`,
+                [Contacts.Fields.FirstName]: firstName,
+                [Contacts.Fields.LastName]: lastName,
+                [Contacts.Fields.Company]: company,
+                [Contacts.Fields.JobTitle]: jobTitle,
+                [Contacts.Fields.Emails]: email ? [{ email: email, isPrimary: true, label: 'work', id: '1' }] : undefined,
+                [Contacts.Fields.PhoneNumbers]: phone ? [{ number: phone, isPrimary: true, label: 'mobile', id: '1', countryCode: '' }] : undefined,
+                [Contacts.Fields.Addresses]: address ? [{ street: address, label: 'work', id: '1', city: '', country: '', region: '', postalCode: '', isoCountryCode: '' }] : undefined,
+            };
+            
+            try {
+                const contactId = await Contacts.addContactAsync(contact);
+                if (contactId) {
+                    Alert.alert("Success", "Contact saved to phone!");
+                }
+            } catch (err) {
+                console.error(err);
+                Alert.alert("Error", "Failed to save contact");
+            }
+        } else {
+            Alert.alert("Permission options", "We need permission to save contacts.");
+        }
+    };
+
     if (loading) return <View style={styles.loadingConfig}><ActivityIndicator size="large" /></View>;
     if (!card) return <View><Text>Card not found</Text></View>;
 
@@ -159,7 +190,26 @@ export default function DetailsScreen() {
                 <TextInput style={styles.input} value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
 
                 <Text style={styles.label}>Phone</Text>
-                <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+                <View style={styles.inputRow}>
+                    <TextInput 
+                        style={[styles.input, styles.inputFlex]} 
+                        value={phone} 
+                        onChangeText={setPhone} 
+                        keyboardType="phone-pad" 
+                    />
+                    <TouchableOpacity 
+                        style={styles.actionButton} 
+                        onPress={() => {
+                            if (phone) {
+                                Linking.openURL(`tel:${phone.replace(/\s+/g, '')}`);
+                            } else {
+                                Alert.alert("No phone number", "Please enter a phone number first.");
+                            }
+                        }}
+                    >
+                        <Feather name="phone-call" size={24} color="white" />
+                    </TouchableOpacity>
+                </View>
 
                 <Text style={styles.label}>Address</Text>
                 <TextInput style={[styles.input, styles.textArea]} value={address} onChangeText={setAddress} multiline />
@@ -172,6 +222,9 @@ export default function DetailsScreen() {
 
                 <View style={styles.buttonContainer}>
                     <Button title={saving ? "Saving..." : "Save Changes"} onPress={handleSave} disabled={saving} />
+                    <View style={{ marginTop: 10 }}>
+                        <Button title="Save to Phone Contacts" onPress={addToContacts} color="#34C759" />
+                    </View>
                 </View>
                 <View style={styles.buttonContainer}>
                     <Button title="Delete" color="red" onPress={handleDelete} />
@@ -227,5 +280,22 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         marginTop: 20,
-    }
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    inputFlex: {
+        flex: 1,
+        marginRight: 10,
+    },
+    actionButton: {
+        backgroundColor: '#007AFF',
+        padding: 10,
+        borderRadius: 5,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: 48, // Match input height roughly
+        width: 48,
+    },
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, Image, RefreshControl, Button } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { supabase } from '../lib/supabase';
@@ -10,6 +10,7 @@ type RootStackParamList = {
     Home: undefined;
     Camera: undefined;
     Details: { card_id: string };
+    Profile: undefined;
 };
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
@@ -35,6 +36,17 @@ function useDebounce<T>(value: T, delay: number): T {
 
 export default function HomeScreen() {
     const navigation = useNavigation<HomeScreenNavigationProp>();
+
+    React.useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <View style={{ marginRight: 15 }}>
+                    <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
+                </View>
+            ),
+        });
+    }, [navigation]);
+
     const [cards, setCards] = useState<BusinessCard[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -205,6 +217,9 @@ export default function HomeScreen() {
                     keyExtractor={(item) => item.id}
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl refreshing={loading} onRefresh={fetchCards} />
+                    }
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Text style={styles.emptyText}>No cards found.</Text>

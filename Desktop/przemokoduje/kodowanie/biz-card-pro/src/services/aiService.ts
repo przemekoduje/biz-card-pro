@@ -7,10 +7,14 @@ const openai = new OpenAI({
     dangerouslyAllowBrowser: true
 });
 
+import { incrementActionCount } from './usageService';
+
+// ... imports
+
 export const analyzeBusinessCard = async (frontBase64: string, backBase64?: string): Promise<any> => {
     try {
         const content: any[] = [
-            { type: "text", text: "Analyze this business card image (it might be front, back, or both combined) and extract the following information in JSON format:\n    - first_name\n    - last_name\n    - company\n    - email\n    - phone\n    - job_title\n    - address\n    - scope_of_work (offer details, services list)\n    - industry (Generate a COMMA-SEPARATED list of relevant industry keywords, synonyms, and related products/services based on the company name and content. Example: 'Joinery, Windows, Doors, PVC, Montage'. Use your knowledge about the company if recognized.)\n    - event_note (if any handwritten note or context is visible)\n    \n    Return ONLY valid JSON." },
+            { type: "text", text: "Analyze this business card image. Extract details in PURE JSON format (no markdown, no backticks). Fields: first_name, last_name, company, email, phone, job_title, address, scope_of_work, industry (comma-separated keywords), event_note. Return ONLY the JSON object." },
             {
                 type: "image_url",
                 image_url: {
@@ -30,7 +34,7 @@ export const analyzeBusinessCard = async (frontBase64: string, backBase64?: stri
         }
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
@@ -45,7 +49,19 @@ export const analyzeBusinessCard = async (frontBase64: string, backBase64?: stri
             throw new Error("No content returned from OpenAI");
         }
 
-        return JSON.parse(responseContent);
+        let parsedData;
+        try {
+            parsedData = JSON.parse(responseContent);
+        } catch (parseError) {
+            console.error("Failed to parse OpenAI response:", responseContent);
+            throw new Error("Failed to process business card data (Invalid JSON).");
+        }
+
+        // Increment scan count after successful analysis
+        await incrementActionCount('scan');
+
+        return parsedData;
+
     } catch (error) {
         console.error("Error analyzing card:", error);
         throw error;
@@ -55,7 +71,7 @@ export const analyzeBusinessCard = async (frontBase64: string, backBase64?: stri
 export const expandSearchQuery = async (query: string): Promise<string[]> => {
     try {
         const response = await openai.chat.completions.create({
-            model: "gpt-4o",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",

@@ -1,7 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { Alert } from 'react-native';
 
-export const uploadImage = async (uri: string): Promise<string | null> => {
+export const uploadImage = async (uri: string): Promise<string> => {
     try {
         const fileName = `${Date.now()}.jpg`;
         const filePath = `${fileName}`;
@@ -19,8 +19,7 @@ export const uploadImage = async (uri: string): Promise<string | null> => {
 
         if (error) {
             console.error('Error uploading image:', error);
-            Alert.alert('Upload Error', error.message);
-            return null;
+            throw new Error(`Upload failed: ${error.message}`);
         }
 
         const { data: publicUrlData } = supabase.storage
@@ -30,7 +29,6 @@ export const uploadImage = async (uri: string): Promise<string | null> => {
         return publicUrlData.publicUrl;
     } catch (error) {
         console.error('Error in uploadImage:', error);
-        Alert.alert('Upload Error', (error as any).message || 'Unknown error');
-        return null;
+        throw error;
     }
 };

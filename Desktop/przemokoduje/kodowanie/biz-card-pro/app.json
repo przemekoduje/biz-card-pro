@@ -12,7 +12,14 @@
         {
           "photosPermission": "Allow Business Card Pro to access your photos to select cards."
         }
-      ]
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow Business Card Pro to access your contacts to save business cards."
+        }
+      ],
+      "expo-web-browser"
     ],
     "name": "biz-card-pro",
     "slug": "biz-card-pro",
