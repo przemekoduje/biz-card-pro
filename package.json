@@ -47,7 +47,11 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "expo-cli": "^6.3.10"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "private": true
 }
