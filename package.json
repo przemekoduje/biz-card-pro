@@ -1,0 +1,52 @@
+{
+  "name": "biz-card-pro",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "deploy": "expo export -p web",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.4.4",
+    "@react-navigation/native": "^7.1.28",
+    "@react-navigation/stack": "^7.7.1",
+    "@supabase/supabase-js": "^2.95.3",
+    "@types/leaflet": "^1.9.21",
+    "axios": "^1.13.5",
+    "expo": "~54.0.33",
+    "expo-calendar": "~15.0.8",
+    "expo-camera": "^17.0.10",
+    "expo-clipboard": "~8.0.8",
+    "expo-contacts": "~15.0.11",
+    "expo-file-system": "~19.0.21",
+    "expo-image-manipulator": "~14.0.8",
+    "expo-image-picker": "^17.0.10",
+    "expo-linking": "~8.0.11",
+    "expo-location": "~19.0.8",
+    "expo-status-bar": "~3.0.9",
+    "expo-web-browser": "~15.0.10",
+    "leaflet": "^1.9.4",
+    "openai": "^6.21.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-leaflet": "^5.0.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-map-clustering": "^4.0.0",
+    "react-native-maps": "1.20.1",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-screens": "~4.16.0",
+    "react-native-url-polyfill": "^3.0.0",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.0",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}

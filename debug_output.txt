@@ -1,0 +1,100 @@
+﻿env: load .env
+env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_OPENAI_API_KEY
+
+{
+  plugins: [
+    [
+      [32m'expo-camera'[39m,
+      {
+        cameraPermission: [32m'Allow Business Card Pro to access your camera to scan cards.'[39m
+      }
+    ],
+    [
+      [32m'expo-image-picker'[39m,
+      {
+        photosPermission: [32m'Allow Business Card Pro to access your photos to select cards.'[39m
+      }
+    ],
+    [32m'expo-contacts'[39m,
+    [32m'expo-location'[39m,
+    [32m'expo-web-browser'[39m
+  ],
+  name: [32m'biz-card-pro'[39m,
+  slug: [32m'biz-card-pro'[39m,
+  version: [32m'1.0.0'[39m,
+  orientation: [32m'portrait'[39m,
+  icon: [32m'./assets/icon.png'[39m,
+  userInterfaceStyle: [32m'light'[39m,
+  newArchEnabled: [33mtrue[39m,
+  description: [90mundefined[39m,
+  sdkVersion: [32m'54.0.0'[39m,
+  platforms: [
+    [32m'ios'[39m,
+    [32m'android'[39m
+  ],
+  splash: {
+    image: [32m'./assets/splash-icon.png'[39m,
+    resizeMode: [32m'contain'[39m,
+    backgroundColor: [32m'#ffffff'[39m
+  },
+  ios: {
+    supportsTablet: [33mtrue[39m,
+    infoPlist: {
+      LSApplicationQueriesSchemes: [
+        [32m'googlegmail'[39m,
+        [32m'mailto'[39m
+      ],
+      NSCalendarsUsageDescription: [32m'Allow Business Card Pro to access your calendar to create follow-up reminders.'[39m,
+      NSRemindersUsageDescription: [32m'Allow Business Card Pro to access your reminders to create follow-up tasks.'[39m
+    }
+  },
+  android: {
+    edgeToEdgeEnabled: [33mtrue[39m,
+    predictiveBackGestureEnabled: [33mfalse[39m,
+    permissions: [
+      [32m'android.permission.CAMERA'[39m,
+      [32m'android.permission.RECORD_AUDIO'[39m,
+      [32m'android.permission.READ_CONTACTS'[39m,
+      [32m'android.permission.WRITE_CONTACTS'[39m,
+      [32m'android.permission.ACCESS_COARSE_LOCATION'[39m,
+      [32m'android.permission.ACCESS_FINE_LOCATION'[39m
+    ],
+    adaptiveIcon: {
+      foregroundImage: [32m'./assets/adaptive-icon.png'[39m,
+      backgroundColor: [32m'#ffffff'[39m
+    }
+  },
+  web: {
+    favicon: [32m'./assets/favicon.png'[39m
+  },
+  _internal: {
+    isDebug: [33mfalse[39m,
+    projectRoot: [32m'C:\\Users\\Admin\\Desktop\\przemokoduje\\kodowanie\\biz-card-pro'[39m,
+    staticConfigPath: [32m'C:\\Users\\Admin\\Desktop\\przemokoduje\\kodowanie\\biz-card-pro\\app.json'[39m,
+    packageJsonPath: [32m'C:\\Users\\Admin\\Desktop\\przemokoduje\\kodowanie\\biz-card-pro\\package.json'[39m,
+    dynamicConfigPath: {},
+    pluginHistory: {
+      [32m'expo-camera'[39m: {
+        name: [32m'expo-camera'[39m,
+        version: [32m'17.0.10'[39m
+      },
+      [32m'expo-image-picker'[39m: {
+        name: [32m'expo-image-picker'[39m,
+        version: [32m'17.0.10'[39m
+      },
+      [32m'expo-contacts'[39m: {
+        name: [32m'expo-contacts'[39m,
+        version: [32m'15.0.11'[39m
+      },
+      [32m'expo-location'[39m: {
+        name: [32m'expo-location'[39m,
+        version: [32m'19.0.8'[39m
+      },
+      [32m'expo-web-browser'[39m: {
+        name: [32m'expo-web-browser'[39m,
+        version: [32m'15.0.10'[39m
+      }
+    }
+  }
+}
+
