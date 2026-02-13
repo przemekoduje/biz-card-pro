@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start",
     "deploy": "expo export -p web",
+    "build": "expo export -p web",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"
